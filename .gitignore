@@ -399,4 +399,6 @@ FodyWeavers.xsd
 
 Eden.apk
 apk/
+cache/
+classes/
 tools/
