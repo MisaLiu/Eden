@@ -77,7 +77,8 @@ analyseAppSetting() {
         local subValue=${subValueRight%%\")\;};
 
         if [[ ! $subValue == V* ]] && [[ $subValue == *\. ]]; then
-          resultSortVersionName="${subValue%\.}.$subVersion";
+          QQversion=${subValue%\.};
+          resultSortVersionName="$QQversion.$subVersion";
           break;
         fi;
       fi
@@ -114,7 +115,7 @@ analyseUtil() {
       local subValue=$(readValueFromCode $line);
       
       if [[ $line =~ "long BUILD_TIME" ]]; then
-        resultBuildTime=$subValue;
+        resultBuildTime=${subValue%L};
         continue;
       fi
       if [[ $line =~ "String SDK_VERSION" ]]; then
@@ -172,25 +173,44 @@ analyseQUA() {
   done
 }
 
-getQQVersion() {
-  local fekitExist=false;
-  local apkCertExist=false;
+decodeSignMd5() {
+  if [ ! -f './apk/META-INF/ANDROIDR.RSA' ]; then
+    exit 1;
+  fi;
+
+  if [ -f './pubkey.der' ]; then
+    rm -f ./pubkey.der;
+  fi;
+
+  openssl pkcs7 -inform DER -in ./apk/META-INF/ANDROIDR.RSA -print_certs -outform PEM | openssl x509 -outform DER > pubkey.der;
+  local signMd5Raw=$(openssl dgst -md5 ./pubkey.der);
+  local signMd5RawSpace=${signMd5Raw#*=};
+  local signMd5=$(echo $signMd5RawSpace | awk '$1=$1');
+
+  if [ ! -z $signMd5 ]; then
+    resultApkSign=$signMd5;
+  else
+    echo '[WARN] Failed to get sign md5, use default value';
+  fi;
+}
+
+getAppIdFromManifest() {
   local apkManifestExist=false;
 
   local IFS=$'\n\n';
 
-  if [ -f './apk/META-INF/ANDROIDR.RSA' ]; then apkCertExist=true; fi;
-  if [ -f './apk/AndroidManifest.xml' ] && [ $READ_ANDROID_VER_FROM_XML == true ]; then apkManifestExist=true; fi;
-  if [ -f './apk/lib/arm64-v8a/libfekit.so' ]; then
-    cp --update=all ./apk/lib/arm64-v8a/libfekit.so ./libfekit.so;
-    fekitExist=true;
+  # NOTE: These line are in a mess
+  # Plz do something if you can
+
+  if [ -f './apk/AndroidManifest.xml' ]; then apkManifestExist=true; fi;
+  if [ ! $apkManifestExist == true ]; then return 0; fi;
+
+  if [ ! $READ_ANDROID_VER_FROM_XML == true ]; then
+    echo '[INFO] Read Android version from xml is disabled.';
+    return 0;
   fi
 
-  if [ ! $fekitExist == true ] && [ ! $apkCertExist == true ] && [ ! $apkManifestExist == true ]; then exit 1; fi;
-
-  # TODO: Decode sign file
-
-  if [ -f './apk/AndroidManifest.xml' ]; then
+  if [ $apkManifestExist == true ]; then
     if [ ! -f './decompile/AndroidManifest.xml' ]; then
       ./tools/xml-decode.sh ./apk/AndroidManifest.xml > ./decompile/AndroidManifest.xml;
     fi
@@ -239,6 +259,91 @@ getQQVersion() {
   fi
 }
 
+checkIsResultEmpty() {
+  if [ -z "$resultAppIdPhone" ]; then resultAppIdPhone="null"; fi;
+  if [ -z "$resultAppIdPad" ]; then resultAppIdPad="null"; fi;
+  if [ -z "$resultAppKey" ]; then resultAppKey="null"; fi;
+  if [ -z "$resultSortVersionName" ]; then resultSortVersionName="null"; fi;
+  if [ -z "$resultApkSign" ]; then resultApkSign="null"; fi;
+  if [ -z "$resultSdkVersion" ]; then resultSdkVersion="null"; fi;
+  if [ -z "$resultSsoVersion" ]; then resultSsoVersion="null"; fi;
+  if [ -z "$resultMiscBitmap" ]; then resultMiscBitmap="null"; fi;
+  if [ -z "$resultMainSigMap" ]; then resultMainSigMap="null"; fi;
+  if [ -z "$resultSubSigMap" ]; then resultSubSigMap="null"; fi;
+  if [ -z "$resultQua" ]; then resultQua="null"; fi;
+}
+
+generateQuaServerConfig() {
+  if [ -z "$resultQua" ]; then
+    echo "{}";
+    exit 1;
+  fi;
+
+  local quaArray=($(echo $resultQua | tr "_" "\n"));
+  local result="{
+  \"server\": {
+    \"host\": \"0.0.0.0\",
+    \"port\": 8080
+  },
+  \"share_token\": false,
+  \"key\": \"Eden\",
+  \"auto_register\": true,
+  \"protocol\": {
+    \"package_name\": \"com.tencent.mobileqq\",
+    \"qua\": \"$resultQua\",
+    \"version\": \"${quaArray[3]}\",
+    \"code\": \"${quaArray[4]}\"
+  },
+  \"unidbg\": {
+    \"dynamic\": false,
+    \"unicorn\": true,
+    \"kvm\": false,
+    \"debug\": true
+  }
+}";
+
+  echo "$result";
+}
+
+generateProtocolJson() {
+  local _isPad=$1;
+  local isPad=$_isPad;
+
+  if [ -z $_isPad ] || [ ! $_isPad == true ]; then
+    isPad=false;
+  else
+    isPad=true;
+  fi
+
+  local appId=$resultAppIdPhone;
+  local protocolType=1;
+
+  if [ $isPad == true ]; then
+    appId=$resultAppIdPad;
+    protocolType=6;
+  fi
+
+  local result="{
+  \"apk_id\": \"com.tencent.mobileqq\",
+  \"app_id\": $appId,
+  \"sub_app_id\": $appId,
+  \"app_key\": \"$resultAppKey\",
+  \"sort_version_time\": \"$resultSortVersionName\",
+  \"build_time\": $resultBuildTime,
+  \"apk_sign\": \"$resultApkSign\",
+  \"sdk_version\": \"$resultSdkVersion\",
+  \"sso_version\": \"$resultSsoVersion\",
+  \"misc_bitmap\": \"$resultMiscBitmap\",
+  \"main_sig_map\": \"$resultMainSigMap\",
+  \"sub_sig_map\": \"$resultSubSigMap\",
+  \"dump_time\": \"$resultBuildTime\",
+  \"qua\": \"$resultQua\",
+  \"protocol_type\": $protocolType
+}";
+
+  echo "$result";
+}
+
 cd ..;
 
 if [ ! -d './apk' ]; then
@@ -278,6 +383,7 @@ analyseAppSetting;
 echo $resultAppIdPhone;
 echo $resultAppIdPad;
 echo $resultSortVersionName;
+echo $QQversion;
 echo .;
 
 analyseEventConstant;
@@ -300,4 +406,31 @@ analyseQUA;
 echo $resultQua;
 echo .;
 
-getQQVersion;
+decodeSignMd5;
+echo $resultApkSign;
+echo .;
+
+getAppIdFromManifest;
+echo $resultAppIdPhone;
+echo $resultAppIdPad;
+echo .;
+
+echo 'Check if any result value is empty...';
+checkIsResultEmpty;
+
+outputDir="./output/$QQversion/";
+mkdir -p "$outputDir";
+
+echo 'Generating config.json for sign server...';
+generateQuaServerConfig > "$outputDir/config.json";
+
+echo 'Generating protocol json...';
+generateProtocolJson false > "$outputDir/android_phone.json";
+generateProtocolJson true > "$outputDir/android_pad.json";
+
+echo 'Copying libfekit.so...';
+if [ -f './apk/lib/arm64-v8a/libfekit.so' ]; then
+  cp --update=all ./apk/lib/arm64-v8a/libfekit.so "$outputDir/libfekit.so";
+else
+  echo '[WARN] libfekit.so not found!';
+fi
