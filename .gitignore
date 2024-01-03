@@ -401,4 +401,5 @@ Eden.apk
 apk/
 cache/
 classes/
+decompile/
 tools/
