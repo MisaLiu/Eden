@@ -398,6 +398,7 @@ FodyWeavers.xsd
 *.sln.iml
 
 Eden.apk
+libfekit.so
 apk/
 cache/
 classes/
