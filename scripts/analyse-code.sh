@@ -285,6 +285,7 @@ generateQuaServerConfig() {
     \"host\": \"0.0.0.0\",
     \"port\": 8080
   },
+  \"share_token\": false,
   \"key\": \"Eden\",
   \"auto_register\": true,
   \"protocol\": {
