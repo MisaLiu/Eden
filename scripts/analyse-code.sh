@@ -285,7 +285,6 @@ generateQuaServerConfig() {
     \"host\": \"0.0.0.0\",
     \"port\": 8080
   },
-  \"share_token\": false,
   \"key\": \"Eden\",
   \"auto_register\": true,
   \"protocol\": {
@@ -295,7 +294,7 @@ generateQuaServerConfig() {
     \"code\": \"${quaArray[4]}\"
   },
   \"unidbg\": {
-    \"dynamic\": false,
+    \"dynarmic\": false,
     \"unicorn\": true,
     \"kvm\": false,
     \"debug\": true
@@ -475,6 +474,13 @@ if [ -f './apk/lib/arm64-v8a/libfekit.so' ]; then
   cp -a ./apk/lib/arm64-v8a/libfekit.so "$outputDir/libfekit.so";
 else
   echo '[WARN] libfekit.so not found!';
+fi
+
+echo 'Copying libQSec.so...';
+if [ -f './apk/lib/arm64-v8a/libQSec.so' ]; then
+  cp -a ./apk/lib/arm64-v8a/libQSec.so "$outputDir/libQSec.so";
+else
+  echo '[WARN] libQSec.so not found!';
 fi
 
 echo 'Analyzing code done';
