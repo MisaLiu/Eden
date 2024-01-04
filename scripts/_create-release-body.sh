@@ -1,9 +1,6 @@
 #!/bin/bash
 
-curl -i $APK_URL > ./tmp_curlheader.txt
-
-FILE_REAL_URL=$(grep "^Location:" ./tmp_curlheader.txt | sed -r "s/^Location:\s(.+)$/\1/g")
-FILE_NAME=$(basename $FILE_REAL_URL)
+FILE_NAME=$(basename $APK_URL)
 FILE_VERSION=$(echo $FILE_NAME | grep -o "\([0-9\.]\+\)" | awk 'NR==1')
 FILE_MD5=$(cat ./Eden.apk | md5sum | cut -d " " -f1)
 RESULT_MD5=$(cat ./output/result.zip | md5sum | cut -d " " -f1)
