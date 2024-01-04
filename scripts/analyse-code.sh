@@ -328,15 +328,15 @@ generateProtocolJson() {
   \"app_id\": $appId,
   \"sub_app_id\": $appId,
   \"app_key\": \"$resultAppKey\",
-  \"sort_version_time\": \"$resultSortVersionName\",
+  \"sort_version_name\": \"$resultSortVersionName\",
   \"build_time\": $resultBuildTime,
   \"apk_sign\": \"$resultApkSign\",
   \"sdk_version\": \"$resultSdkVersion\",
-  \"sso_version\": \"$resultSsoVersion\",
-  \"misc_bitmap\": \"$resultMiscBitmap\",
-  \"main_sig_map\": \"$resultMainSigMap\",
-  \"sub_sig_map\": \"$resultSubSigMap\",
-  \"dump_time\": \"$resultBuildTime\",
+  \"sso_version\": $resultSsoVersion,
+  \"misc_bitmap\": $resultMiscBitmap,
+  \"main_sig_map\": $resultMainSigMap,
+  \"sub_sig_map\": $resultSubSigMap,
+  \"dump_time\": $resultBuildTime,
   \"qua\": \"$resultQua\",
   \"protocol_type\": $protocolType
 }";
@@ -472,7 +472,7 @@ generateDTConfig > "$outputDir/dtconfig.json";
 
 echo 'Copying libfekit.so...';
 if [ -f './apk/lib/arm64-v8a/libfekit.so' ]; then
-  cp --update=all ./apk/lib/arm64-v8a/libfekit.so "$outputDir/libfekit.so";
+  cp -a ./apk/lib/arm64-v8a/libfekit.so "$outputDir/libfekit.so";
 else
   echo '[WARN] libfekit.so not found!';
 fi
