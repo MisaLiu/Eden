@@ -9,8 +9,6 @@ DECOMPILE_CLASSES=(
   "cooperation.qzone.QUA"
 );
 
-cd ..;
-
 if [ ! -d './classes' ]; then
   echo 'Dir /classes not found! Aborting...';
   exit 1;

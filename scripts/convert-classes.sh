@@ -43,8 +43,6 @@ extractFiles() {
   rm -rf './cache/tmp';
 }
 
-cd ..;
-
 if [ ! -d './apk' ]; then
   echo 'Dir ./apk not found! Aborting...';
   exit 1;

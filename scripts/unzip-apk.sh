@@ -1,7 +1,5 @@
 #!/bin/bash
 
-cd ..;
-
 if [ ! -f './Eden.apk' ]; then
   echo 'No apk found! Aborting...';
   exit 1;

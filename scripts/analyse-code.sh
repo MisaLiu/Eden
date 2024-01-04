@@ -385,8 +385,6 @@ generateDTConfig() {
   echo "$result";
 }
 
-cd ..;
-
 if [ ! -d './apk' ]; then
   echo 'Dir /apk not found! Aborting...';
   exit 1;
