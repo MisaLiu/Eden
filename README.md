@@ -2,6 +2,8 @@
 
 # Eden
 
+[![do-actions](https://github.com/MisaLiu/Eden/actions/workflows/do.yml/badge.svg?branch=main)](https://github.com/MisaLiu/Eden/actions/workflows/do.yml)
+
 [Eden](https://github.com/MrXiaoM/Eden) is a tool used to analyse large Android application. This fork aim to convert all actions into bash scripts, so users can use this tool for CIs (such as [GitHub Actions](https://docs.github.com/actions)).
 
 # Requirements
