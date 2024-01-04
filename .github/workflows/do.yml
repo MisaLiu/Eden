@@ -1,0 +1,91 @@
+name: do-actions
+
+on:
+  workflow_dispatch:
+    inputs:
+      apkUrl:
+        description: 'APK Url'
+        required: true
+        type: string
+      getAppIdFromXml:
+        description: 'Get appId from AndroidManifest.xml'
+        required: false
+        type: boolean
+
+env:
+  DEX2JAR_URL: 'https://github.com/pxb1988/dex2jar/releases/download/v2.4/dex-tools-v2.4.zip'
+  PROCYON_URL: 'https://github.com/mstrobel/procyon/releases/download/v0.6.0/procyon-decompiler-0.6.0.jar'
+  AXMLPRINTER2_URL: 'https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/android4me/AXMLPrinter2.jar'
+  APK_URL: ${{ github.event.inputs.apkUrl }}
+  READ_ANDROID_VER_FROM_XML: ${{ github.event.inputs.getAppIdFromXml }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install required CLIs
+        run: apt-get update && apt-get install -y wget unzip openssl libxml2-utils libxml-xpath-perl
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4.0.0
+        with:
+          java-version: '8'
+          distribution: 'zulu'
+
+      - name: Prepare toolkits (Create directory)
+        run: |
+          mkdir ./tools
+          mkdir ./toolstmp
+          cp -a ./files/* ./tools/
+      
+      - name: Prepare toolkits (dex2jar)
+        run: |
+          wget -O ./toolstmp/dex2jar.zip $DEX2JAR_URL
+          unzip ./toolstmp/dex2jar.zip -d ./toolstmp/
+          cp -a ./toolstmp/dex-tools-*/* ./tools/
+      
+      - name: Prepare toolkits (procyon)
+        run: wget -P ./tools/lib $PROCYON_URL
+
+      - name: Prepare toolkits (AXMLPrinter2)
+        run: wget -P ./tools/lib $AXMLPRINTER2_URL
+      
+      - name: Prepare toolkits (cleanup)
+        run: |
+          rm -rf ./toolstmp
+          chmod +x ./tools/*.sh
+      
+      - name: Download APK
+        run: wget -O Eden.apk $APK_URL
+      
+      - name: Unzip APK
+        run: ./scripts/unzip-apk.sh
+      
+      - name: Convert classes
+        run: ./scripts/convert-classes.sh
+      
+      - name: Decompile classes
+        run: ./scripts/decompile-classes.sh
+      
+      - name: Analyse code
+        run: ./scripts/analyse-code.sh
+
+      - name: Pack output
+        run: |
+          cd ./output
+          zip result.zip -r ./*
+          cd ..
+          mv ./output/result.zip ./
+      
+      - name: Get apk file info
+        run: ./scripts/_create-release-body.sh
+      
+      - name: Upload to release
+        uses: ncipollo/release-action@v1
+        with:
+            artifacts: "./output/result.zip"
+            bodyFile: "./_action_body.md"
+            tag: ${{ github.run_number }}
