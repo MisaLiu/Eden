@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install required CLIs
-        run: apt-get update && apt-get install -y wget unzip openssl libxml2-utils libxml-xpath-perl
+        run: sudo apt-get update && sudo apt-get install -y wget unzip openssl libxml2-utils libxml-xpath-perl
 
       - name: Setup Java JDK
         uses: actions/setup-java@v4.0.0
