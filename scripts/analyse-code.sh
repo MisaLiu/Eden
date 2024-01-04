@@ -1,6 +1,6 @@
 #!/bin/bash
 
-READ_ANDROID_VER_FROM_XML=false;
+_READ_ANDROID_VER_FROM_XML=$(echo ${READ_ANDROID_VER_FROM_XML:-false});
 
 readJava() {
   local classname=$1;
@@ -205,7 +205,7 @@ getAppIdFromManifest() {
   if [ -f './apk/AndroidManifest.xml' ]; then apkManifestExist=true; fi;
   if [ ! $apkManifestExist == true ]; then return 0; fi;
 
-  if [ ! $READ_ANDROID_VER_FROM_XML == true ]; then
+  if [ ! $_READ_ANDROID_VER_FROM_XML == true ]; then
     echo '[INFO] Read Android version from xml is disabled.';
     return 0;
   fi
@@ -344,6 +344,47 @@ generateProtocolJson() {
   echo "$result";
 }
 
+generateDTConfig() {
+  convertCodeToJsonArray() {
+    local code=$1;
+
+    local resultRawEnd=${code##*byte\[\]\[\]};
+    local resultRaw=${resultRawEnd%%\;*};
+    local resultQuote=${resultRaw//\{/\[};
+    local result=${resultQuote//\}/\]};
+
+    echo $result | awk '$1=$1';
+  }
+
+  if [ -z "$sFEBound" ]; then
+    echo "{}";
+    return 1;
+  fi;
+
+  local en=null;
+  local de=null;
+  local IFS=$'\n\n';
+
+  for line in $sFEBound; do
+    if [ ! $en == null ] && [ ! $de == null ]; then break; fi;
+    if [[ ! $line =~ "=" ]] || [[ ! $line =~ "byte[][]" ]]; then continue; fi;
+    if [[ $line =~ "FEBound.mConfigEnCode" ]]; then
+      en=$(convertCodeToJsonArray $line);
+      continue;
+    fi
+    if [[ $line =~ "FEBound.mConfigDeCode" ]]; then
+      de=$(convertCodeToJsonArray $line);
+      continue;
+    fi
+  done
+
+  local result="{
+  \"en\": $en,
+  \"de\": $de
+}"
+  echo "$result";
+}
+
 cd ..;
 
 if [ ! -d './apk' ]; then
@@ -379,41 +420,41 @@ sWtLoginHelper=$(readJava "oicq.wlogin_sdk.request.WtloginHelper");
 sQUA=$(readJava "cooperation.qzone.QUA");
 QQversion="unknown";
 
+echo 'Analysing base info...';
 analyseAppSetting;
-echo $resultAppIdPhone;
-echo $resultAppIdPad;
-echo $resultSortVersionName;
-echo $QQversion;
-echo .;
+echo "[INFO] appId: $resultAppIdPhone";
+echo "[INFO] appIdPad: $resultAppIdPad";
+echo "[INFO] version: $QQversion";
+echo "[INFO] versionName: $resultSortVersionName";
 
+echo 'Analysing appKey...';
 analyseEventConstant;
-echo $resultAppKey;
-echo .;
+echo "[INFO] appKey: $resultAppKey";
 
+echo 'Analysing util...';
 analyseUtil;
-echo $resultBuildTime;
-echo $resultSdkVersion;
-echo $resultSsoVersion;
-echo .;
+echo "[INFO] buildTime: $resultBuildTime";
+echo "[INFO] sdkVersion: $resultSdkVersion";
+echo "[INFO] ssoVersion: $resultSsoVersion";
 
+echo 'Analysing WtLoginHelper...';
 analyseWtLoginHelper;
-echo $resultMainSigMap;
-echo $resultSubSigMap;
-echo $resultMiscBitmap;
-echo .;
+echo "[INFO] mainSigMap: $resultMainSigMap";
+echo "[INFO] subSigMap: $resultSubSigMap";
+echo "[INFO] miscBitmap: $resultMiscBitmap";
 
+echo 'Analysing QUA...';
 analyseQUA;
-echo $resultQua;
-echo .;
+echo "[INFO] qua: $resultQua";
 
+echo 'Getting sign md5...';
 decodeSignMd5;
-echo $resultApkSign;
-echo .;
+echo "[INFO] apkSign: $resultApkSign";
 
+echo 'Getting appId from AndroidManifest.xml...';
 getAppIdFromManifest;
-echo $resultAppIdPhone;
-echo $resultAppIdPad;
-echo .;
+echo "[INFO] appId: $resultAppIdPhone";
+echo "[INFO] appIdPad: $resultAppIdPad";
 
 echo 'Check if any result value is empty...';
 checkIsResultEmpty;
@@ -428,9 +469,14 @@ echo 'Generating protocol json...';
 generateProtocolJson false > "$outputDir/android_phone.json";
 generateProtocolJson true > "$outputDir/android_pad.json";
 
+echo 'Generating dtconfig.json...';
+generateDTConfig > "$outputDir/dtconfig.json";
+
 echo 'Copying libfekit.so...';
 if [ -f './apk/lib/arm64-v8a/libfekit.so' ]; then
   cp --update=all ./apk/lib/arm64-v8a/libfekit.so "$outputDir/libfekit.so";
 else
   echo '[WARN] libfekit.so not found!';
 fi
+
+echo 'Analyzing code done';
