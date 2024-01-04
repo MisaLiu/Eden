@@ -2,7 +2,7 @@
 
 # Eden
 
-[![do-actions](https://github.com/MisaLiu/Eden/actions/workflows/do.yml/badge.svg?branch=main)](https://github.com/MisaLiu/Eden/actions/workflows/do.yml)
+[![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/MisaLiu/Eden/do.yml?logo=github&label=CI)](https://github.com/MisaLiu/Eden/actions/workflows/do.yml)  [![GitHub all releases](https://img.shields.io/github/downloads/MisaLiu/Eden/total?logo=github&label=Downloads)](https://github.com/MisaLiu/Eden/releases/latest)
 
 [Eden](https://github.com/MrXiaoM/Eden) is a tool used to analyse large Android application. This fork aim to convert all actions into bash scripts, so users can use this tool for CIs (such as [GitHub Actions](https://docs.github.com/actions)).
 
