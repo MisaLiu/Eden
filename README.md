@@ -21,7 +21,7 @@
 
 # Usage
 
-Please refer to GitHub Actions' config file.
+Please refer to [GitHub Actions workflow file](https://github.com/MisaLiu/Eden/blob/main/.github/workflows/do.yml).
 
 # Thanks
 
