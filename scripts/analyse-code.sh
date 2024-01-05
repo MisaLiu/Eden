@@ -285,7 +285,8 @@ generateQuaServerConfig() {
     \"host\": \"0.0.0.0\",
     \"port\": 8080
   },
-  \"share_token\": false,
+  \"share_token\": true,
+  \"count\": 10,
   \"key\": \"Eden\",
   \"auto_register\": true,
   \"protocol\": {
@@ -299,7 +300,10 @@ generateQuaServerConfig() {
     \"unicorn\": true,
     \"kvm\": false,
     \"debug\": true
-  }
+  },
+  \"black_list\": [
+    1008611
+  ]
 }";
 
   echo "$result";
